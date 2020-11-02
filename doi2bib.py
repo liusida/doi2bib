@@ -15,6 +15,8 @@ import urllib.error
 import argparse
 import re
 import time
+import pickle
+import os
 
 def main(args):
     if args.input_file is not None:
@@ -34,17 +36,42 @@ def main(args):
             if the_page is None:
                 error_item += 1
             else:
+                print("%", url)
                 print(the_page)
     print(f"% {output_item} items in total.")
     print(f"% {error_item} items have errors.")
+    save_to_cache()
 
 visited = {}
+g_cache = None
+g_cache_filename = "cache.pickle"
+def get_from_cache(raw_doi):
+    global g_cache
+    if g_cache is None:
+        if os.path.exists(g_cache_filename):
+            with open(g_cache_filename, "rb") as f:
+                g_cache = pickle.load(f)
+        else:
+            g_cache = {}
+    if raw_doi in g_cache:
+        return g_cache[raw_doi]
+    return None
+
+def save_to_cache():
+    if g_cache is not None:
+        with open(g_cache_filename, "wb") as f:
+            pickle.dump(g_cache, f)
+
 def get_bib(raw_doi, retry=10):
     global visited
+    global g_cache
     url = f"https://{API}/{raw_doi}"
     if url in visited:
         print(f"% Error: duplicated item {raw_doi}, ignored.")
         return None
+    the_page = get_from_cache(raw_doi)
+    if the_page is not None:
+        return the_page
     the_page = None
     while(retry):
         try:
@@ -59,6 +86,7 @@ def get_bib(raw_doi, retry=10):
             time.sleep(3)
             continue
     visited[url] = True
+    g_cache[raw_doi] = the_page
     return the_page
 
 if __name__ == "__main__":
