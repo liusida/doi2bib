@@ -36,7 +36,7 @@ def main(args):
             if the_page is None:
                 error_item += 1
             else:
-                print("%", url)
+                print("%", url, end="")
                 print(the_page)
     print(f"% {output_item} items in total.")
     print(f"% {error_item} items have errors.")
@@ -65,12 +65,13 @@ def save_to_cache():
 def get_bib(raw_doi, retry=10):
     global visited
     global g_cache
-    url = f"https://{API}/{raw_doi}"
-    if url in visited:
+    if raw_doi in visited:
         print(f"% Error: duplicated item {raw_doi}, ignored.")
         return None
+    url = f"https://{API}/{raw_doi}"
     the_page = get_from_cache(raw_doi)
     if the_page is not None:
+        visited[raw_doi] = True
         return the_page
     the_page = None
     while(retry):
@@ -85,7 +86,7 @@ def get_bib(raw_doi, retry=10):
             print(f"% Error when fetching {url}\n% {err}")
             time.sleep(3)
             continue
-    visited[url] = True
+    visited[raw_doi] = True
     g_cache[raw_doi] = the_page
     return the_page
 
